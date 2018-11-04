@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <!-- 引入 ECharts 文件 -->
+    <script src="/js/echarts.min.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+</head>
+<body>
+<!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+<div id="main" style="width: 600px;height:400px;">
+    <script type="text/javascript">
+
+        var name1 = [];
+        var value = [];
+        (function () {
+            $.ajax({
+                type: "get",
+                url: "/showDay",
+                async: false,
+                dataType: "json",
+                success: function (result) {
+                    console.log(result);
+                    for (var i = 0; i < result.length; i++) {
+                        name1[i] = result[i].name;
+                        value[i] = result[i].value;
+                    }
+                }
+            });
+        })();
+
+        // 基于准备好的dom，初始化echarts实例
+        var myChart = echarts.init(document.getElementById('main'));
+
+        // 指定图表的配置项和数据
+        var option = {
+            title: {
+                text: '慕课网实战课程统计'
+            },
+            tooltip: {},
+            legend: {
+                data: ['点击量']
+            },
+            xAxis: {
+                data: name1
+            },
+            yAxis: {},
+            series: [{
+                name: '销量',
+                type: 'bar',
+                data: value
+            }]
+        };
+
+        // 使用刚指定的配置项和数据显示图表。
+        myChart.setOption(option);
+
+        //定时刷洗
+        setInterval(function () {
+            location.reload();
+        },600000)
+    </script>
+</div>
+</body>
+</html>
