@@ -1,0 +1,6 @@
+hbase\manage\AdminDemo.class
+hbase\HbaseDemo.class
+hbase\filter\FilterBaseDemo.class
+hbase\filter\CompareFilterDemo.class
+hbase\counter\CounterDemo.class
+hbase\coprocessor\MyCoprocessor.class

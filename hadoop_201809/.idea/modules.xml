@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/flume-demo/flume-demo.iml" filepath="$PROJECT_DIR$/flume-demo/flume-demo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/hadoop_201809.iml" filepath="$PROJECT_DIR$/hadoop_201809.iml" />
+      <module fileurl="file://$PROJECT_DIR$/hbase-demo/hbase-demo.iml" filepath="$PROJECT_DIR$/hbase-demo/hbase-demo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/hdfs-demo/hdfs-demo.iml" filepath="$PROJECT_DIR$/hdfs-demo/hdfs-demo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/hive-demo/hive-demo.iml" filepath="$PROJECT_DIR$/hive-demo/hive-demo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/kafka-demo/kafka-demo.iml" filepath="$PROJECT_DIR$/kafka-demo/kafka-demo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/scala-demo/scala-demo.iml" filepath="$PROJECT_DIR$/scala-demo/scala-demo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/spark-demo/spark-demo.iml" filepath="$PROJECT_DIR$/spark-demo/spark-demo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/storm-demo/storm-demo.iml" filepath="$PROJECT_DIR$/storm-demo/storm-demo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/zookeeper-demo/zookeeper-demo.iml" filepath="$PROJECT_DIR$/zookeeper-demo/zookeeper-demo.iml" />
+    </modules>
+  </component>
+</project>
