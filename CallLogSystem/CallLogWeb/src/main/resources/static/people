@@ -1,0 +1,46 @@
+2018022670	纪堉铤	男	计算机学院	软件工程	专业学位	16675285890
+2018022669	黄伟明	男	计算机学院	软件工程	专业学位	18813299487
+2018022668	黄达庆	男	计算机学院	软件工程	专业学位	13727577495
+2018022667	胡梁	    男	计算机学院	软件工程	专业学位	15971551004
+2018022666	郭玉明	男	计算机学院	软件工程	专业学位	13422115728
+2018022665	郭燕梁	男	计算机学院	软件工程	专业学位	18565181597
+2018022664	高倩	    女	计算机学院	软件工程	专业学位	13080010932
+2018022663	高卓君	女	计算机学院	软件工程	专业学位	13265360128
+2018022662	方凯德	男	计算机学院	软件工程	专业学位	18777354343
+2018022661	董晓明	男	计算机学院	软件工程	专业学位	13559777534
+2018022660	丁笔超	男	计算机学院	软件工程	专业学位	13406758563
+2018022659	陈麒任	男	计算机学院	软件工程	专业学位	15602209451
+2018022658	陈周进	男	计算机学院	软件工程	专业学位	17798239564
+2018022657	陈振科	男	计算机学院	软件工程	专业学位	13118812701
+2018022656	陈舒婷	女	计算机学院	软件工程	专业学位	13147193238
+2018022655	陈建成	男	计算机学院	软件工程	专业学位	18819258466
+2018022654	蔡一响	男	计算机学院	软件工程	专业学位	15768650644
+2018022653	朱星图	男	计算机学院	软件工程	学术学位	18826107967
+2018022652	张真金	女	计算机学院	软件工程	学术学位	18271656032
+2018022651	张新会	女	计算机学院	软件工程	学术学位	18256177568
+2018022650	张腾鹰	男	计算机学院	软件工程	学术学位	15521140991
+2018022649	余梦婧	女	计算机学院	软件工程	学术学位	18879735663
+
+insert into person(name,sex,phone) values('纪堉铤','男','16675285890');
+insert into person(name,sex,phone) values('黄伟明','男','18813299487');
+insert into person(name,sex,phone) values('黄达庆','男','13727577495');
+insert into person(name,sex,phone) values('胡梁的','男','	15971551004');
+insert into person(name,sex,phone) values('郭玉明','男','13422115728');
+insert into person(name,sex,phone) values('郭燕梁','男','18565181597');
+insert into person(name,sex,phone) values('高倩的','女','	13080010932');
+insert into person(name,sex,phone) values('高卓君','女','13265360128');
+insert into person(name,sex,phone) values('方凯德','男','18777354343');
+insert into person(name,sex,phone) values('董晓明','男','13559777534');
+insert into person(name,sex,phone) values('丁笔超','男','13406758563');
+insert into person(name,sex,phone) values('陈麒任','男','15602209451');
+insert into person(name,sex,phone) values('陈周进','男','17798239564');
+insert into person(name,sex,phone) values('陈振科','男','13118812701');
+insert into person(name,sex,phone) values('陈舒婷','女','13147193238');
+insert into person(name,sex,phone) values('陈建成','男','18819258466');
+insert into person(name,sex,phone) values('蔡一响','男','15768650644');
+insert into person(name,sex,phone) values('朱星图','男','18826107967');
+insert into person(name,sex,phone) values('张真金','女','18271656032');
+insert into person(name,sex,phone) values('张新会','女','18256177568');
+insert into person(name,sex,phone) values('张腾鹰','男','15521140991');
+insert into person(name,sex,phone) values('余梦婧','女','18879735663');
+

@@ -1,0 +1,18 @@
+spring:
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: false
+    mode: HTML5
+    encoding: UTF8
+#    servlet:
+#      content-type: text/html
+    enabled: true
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    username: root
+    password: 123456
+    url: jdbc:mysql://node00:3306/imooc
+server:
+  servlet:
+    context-path: /callLog

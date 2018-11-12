@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="CallLogConsumerModule" />
+        <module name="CallLogGenModule" />
+        <module name="CallLogWeb" />
+        <module name="HBaseCoprocessor" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="calllog-web" target="1.8" />
+      <module name="CallLogConsumerModule" target="1.8" />
+      <module name="CallLogGenModule" target="1.8" />
+      <module name="CallLogSystem" target="1.8" />
+      <module name="CallLogWeb" target="1.8" />
+      <module name="HBaseCoprocessor" target="1.8" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

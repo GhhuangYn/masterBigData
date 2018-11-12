@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>查询电话记录</title>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.1.0/css/bootstrap.min.css">
+    <script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/popper.js/1.12.5/umd/popper.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/4.1.0/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <h2>您的通话记录</h2>
+    <h5>主叫记录</h5>
+    <table class="table">
+        <thead class="thead-light">
+        <tr>
+            <th>主叫</th>
+            <th>被叫</th>
+            <th>日期</th>
+            <th>时长</th>
+        </tr>
+        </thead>
+        <tbody th:each="log:${logs}">
+        <tr th:if="${log.type==0}">
+            <td th:text="${log.from} + ' | ' + ${log.fromName}"></td>
+            <td th:text="${log.to} + ' | ' + ${log.toName}"></td>
+            <td th:text="${#dates.format(log.date,'yyyy/MM/dd HH:mm:ss')}"></td>
+            <td th:text="${log.duration}"></td>
+        </tr>
+        </tbody>
+    </table>
+    <br/>
+    <h5>被叫记录</h5>
+    <table class="table">
+        <thead class="thead-light">
+        <tr>
+            <th>主叫</th>
+            <th>被叫</th>
+            <th>日期</th>
+            <th>时长</th>
+        </tr>
+        </thead>
+        <tbody th:each="log:${logs}">
+        <tr th:if="${log.type==1}">
+            <td th:text="${log.from}"></td>
+            <td th:text="${log.to}"></td>
+            <td th:text="${#dates.format(log.date,'yyyy/MM/dd HH:mm:ss')}"></td>
+            <td th:text="${log.duration}"></td>
+        </tr>
+        </tbody>
+    </table>
+
+</div>
+</body>
+</html>
