@@ -1,0 +1,8 @@
+1	xiaoming	information	software	2017
+2	xiaobai	information	computer	2017
+3	zhangfei	information	computer	2017
+4	likui	information	bigdata	2017
+5	zhaoyun	information	bigdata	2017
+6	zhangsan	information	software	2019
+7	lisi	information	bigdata	2019
+8	wangwu	information	computer	2019

@@ -1,0 +1,3 @@
+zhangsan	10800	beijing,shanghai	养老:1000,医疗:600	2000,true,500
+lisi	20000	beijing,nanjing	养老:2000,医疗:1200	2000,false,500
+wangwu	17000	shanghai,nanjing	养老:1800,医疗:1100	2000,true,500

@@ -1,0 +1,229 @@
+****************数据可视化cboard*****************
+#环境准备
+#安装phantomjs-2.1.3
+下载地址：https://bitbucket.org/ariya/phantomjs/downloads/
+tar -xjvf phantomjs-2.1.1-linux-x86_64.tar.bz2
+vim /etc/profile
+export PHANTOMJS_HOME=/home/hadoop/apps/phantomjs-2.1.1
+export PATH=$PATH:${PHANTOMJS_HOME}/bin
+source /etc/profile
+执行phantomjs运行正常即安装成功
+
+#cboard安装配置
+cboard的github地址：https://github.com/yzhang921/CBoard
+
+#修改配置文件
+##系统配置
+CBoard/src/main/resources/config.properties
+jdbc_url=jdbc:mysql://192.168.183.101:3306/cboard
+jdbc_username=hive
+jdbc_password=hive123
+phantomjs_path=/home/hadoop/apps/phantomjs-2.1.1/bin/phantomjs
+
+##中英文显示配置
+CBoard/src/main/webapp/org/cboard/Settings.js
+
+var settings = {
+    preferredLanguage: "cn" // en/cn: Switch language to Chinese
+};
+
+#maven打包：
+##sqlserver的jdbc驱动包添加到maven库
+mvn install:install-file -Dfile=lib/sqljdbc4-4.0.jar -DgroupId=com.microsoft.sqlserver -DartifactId=sqljdbc4 -Dversion=4.0 -Dpackaging=jar 
+##打包
+mvn clean package
+
+#在mysql中创建数据库cboard
+create database cboard;
+#从CBoard源码包的/sql/mysql目录下找到mysql.sql文件
+#在mysql命令行中执行sql脚本文件
+mysql> source /bigdata/CBoard/sql/mysql/mysql.sql
+
+#解压tomcat
+#拷贝编译好的cboard.war包到tomcat的webapps目录下
+cp /bigdata/CBoard/target/cboard.war /home/hadoop/apps/tomcat-7/webapps
+
+#修改tomcat-7/conf目录下server.xml服务相关配置项
+#绑定端口号8080
+<Connector port="8080" protocol="HTTP/1.1" connectionTimeout="20000" redirectPort="8443" />
+#绑定IP
+<Host name="192.168.183.100"  appBase="webapps" unpackWARs="true" autoDeploy="true">
+
+#启动tomcat
+bin/startup.sh
+
+#关闭tomcat
+bin/shutdown.sh
+
+#在浏览器中访问cboard
+http://192.168.183.100:8080/cboard
+
+#初始登录用户名密码
+admin
+root123
+
+
+*******************kafka*************
+#创建主题
+bin/kafka-topics.sh --create --zookeeper 192.168.183.100:2181 --replication-factor 1 --partitions 3 --topic userlog2
+
+#查看kafka中已经创建的主题列表
+bin/kafka-topics.sh --list --zookeeper 192.168.183.100:2181
+
+#删除主题
+bin/kafka-topics.sh --delete --zookeeper 192.168.183.100:2181 --topic userlog1
+
+#使用kafka自带的消费者客户端脚本
+bin/kafka-console-consumer.sh --zookeeper 192.168.183.100:2181 --from-beginning --topic userlog2
+
+
+********************模拟日志生成*************
+java -cp logproducer-1.0-SNAPSHOT.jar cn.chinahadoop.producer.LogProducer /home/hadoop/apps/userlog f1
+
+********************flume日志收集*************
+#hdfs创建/data/userlog目录 
+hadoop fs -mkdir /data/userlog
+
+#启动用户日志收集客户端
+bin/flume-ng agent --conf conf --conf-file conf/logagent.conf --name logagent -Dflume.root.logger=INFO,console
+
+#后台运行
+bin/flume-ng agent --conf conf --conf-file conf/logagent.conf --name logagent >/dev/null 2>&1 &
+
+#在node01和node02分别启动日志收集collector
+bin/flume-ng agent --conf conf --conf-file conf/collectagent100.conf --name collectagent -Dflume.root.logger=INFO,console
+bin/flume-ng agent --conf conf --conf-file conf/collectagent101.conf --name collectagent -Dflume.root.logger=INFO,console
+bin/flume-ng agent --conf conf --conf-file conf/collectagent.conf --name collectagent >/dev/null 2>&1 &
+
+********************hive数据仓库*************
+#一、创建原始日志临时存储ods库
+create database ods;
+
+##1.创建用户日志外部分区表
+#用户id，使用的客户端版本号，地域id，用户行为，时间戳
+create external table ods.userlog_external_pt(
+user_id string,
+client_version string,
+area_id string,
+user_behavior int,
+time string
+)
+partitioned by(dt string)
+row format delimited 
+fields terminated by ',' 
+lines terminated by '\n'
+stored as textfile
+location '/data/userlog';
+
+#二、创建历史明细数据长期存储pdw库
+create database pdw;
+
+##1.创建用户日志明细表
+//用户id，使用的客户端版本号，客户端类型，地域id，地域名称，时间戳，曝光，点击
+create table pdw.userlog_detail_pt(
+user_id string,
+client_version string,
+client_type string,
+area_id string,
+area_name string,
+time string,
+pv_cnt int,
+click_cnt int
+)
+partitioned by(dt string)
+row format delimited 
+fields terminated by '\t' 
+lines terminated by '\n'
+stored as RCFILE;
+
+##2.创建新增用户明细表（用于计算新增用户数，累计用户）
+//新增用户id，时间戳
+create table pdw.new_user_detail_pt(
+user_id string,
+time string
+)
+partitioned by(dt string)
+row format delimited 
+fields terminated by '\t' 
+lines terminated by '\n'
+stored as RCFILE;
+
+#三、创建存储维度关系表的rel库
+create database rel;
+##1.创建地域表
+//字段信息：地域编码、地域名称
+create table rel.area_info(
+id string,
+name string
+)
+row format delimited 
+fields terminated by '\t' 
+lines terminated by '\n'
+stored as textfile;	
+//导入数据：
+load data local inpath '/home/hadoop/apps/hive_test/data/area_data.txt' into table area_info;
+
+##2.创建客户端版本与客户端类型的映射关系表
+create table rel.client_version_type_info(
+version_id string,
+type string
+)
+row format delimited 
+fields terminated by '\t'
+lines terminated by '\n'
+stored as textfile;	
+
+//导入数据：
+load data local inpath '/home/hadoop/apps/hive_test/data/client_version_type_data.txt' into table client_version_type_info;
+
+#离线报表报表
+脚本路径：/home/hadoop/apps/hive_test/task
+##hive task，原始数据ETL -> 明细数据
+//用户明细
+ods_user_log_2_rcfile_daily.sh
+//新增用户
+pdw_new_user_detail_daily.sh
+##报表任务
+//新增用户数、活跃用户数、累计用户数
+user_overview_report_task_daily.sh
+
+//日期、客户端类型、曝光量、点击量
+devict_type_pv_click_report_task_daily.sh
+
+#实时报表
+##创建mysql数据库bi
+create database bi;
+
+##创建实时关键指标表realtime_pv_click_report_daily
+CREATE TABLE `realtime_pv_click_report_daily` (
+`pv_cnt` int(11) NOT NULL,
+`click_cnt` int(11) NOT NULL,
+`date_time` varchar(512) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,6 @@
+apple_phone_v1.2_20180101	mobile
+android_v1.2_20180110	mobile
+windows_v1_20171201	pc
+apple_pad_v1.2_20180101	mobile
+apple_mac_v1.2_20180101	pc
+android_pad_v1.2_20180110	mobile

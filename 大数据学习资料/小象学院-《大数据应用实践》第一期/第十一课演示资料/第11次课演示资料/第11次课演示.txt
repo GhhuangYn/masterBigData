@@ -1,0 +1,43 @@
+1.sparkstreaming监听端口计算wordcount
+  安装nc：yum install -y nc
+  启动一个socket服务端口：nc -lk 8888
+	
+2.window窗口操作
+
+3.mapWithState状态管理，实现全局累加器
+
+4.用户行为分析系统
+#在kafka中创建主题
+bin/kafka-topics.sh --create --zookeeper 192.168.183.100:2181 --replication-factor 1 --partitions 3 --topic DeviceEvents
+
+#查看kafka中已经创建的主题列表
+bin/kafka-topics.sh --list --zookeeper 192.168.183.100:2181
+
+#删除主题
+bin/kafka-topics.sh --delete --zookeeper 192.168.183.100:2181 --topic DeviceEvents
+
+#使用kafka自带的消费者客户端脚本
+bin/kafka-console-consumer.sh --zookeeper 192.168.183.100:2181 --from-beginning --topic DeviceEvents
+
+#创建mysql数据库streamdb
+create database streamdb
+
+#创建表device_click
+CREATE TABLE `device_click` (
+`id` int(11) NOT NULL AUTO_INCREMENT,
+`device_id` varchar(512) DEFAULT NULL,
+`device_type` varchar(512) DEFAULT NULL,
+`time` varchar(512) DEFAULT NULL,
+`click_count` int(11) NOT NULL,
+PRIMARY KEY  (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+#kafka consumer参数
+val kafkaParams = Map[String, Object](
+      "bootstrap.servers" -> "192.168.183.102:9092,192.168.183.103:9092,192.168.183.104:9092",
+      "key.deserializer" -> classOf[StringDeserializer],
+      "value.deserializer" -> classOf[StringDeserializer],
+      "group.id" -> "deviceClickstream",
+      "auto.offset.reset" -> "earliest",
+      "enable.auto.commi" ->  (true: java.lang.Boolean)
+    )

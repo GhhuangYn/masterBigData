@@ -1,0 +1,75 @@
+############需求1演示##########
+需求：
+一批TB或者PB量级的历史广告数据，需要完成如下功能
+统计粒度：按天统计
+统计指标：计算曝光量（PV）
+按照曝光量升序排列和倒序排列
+
+主要考察知识点：
+1）两个作业串行完成，第一个负责计算指标值，第二个负责排序
+2）升序利用shuffle阶段对key升序排列的特点
+3）倒序：重写IntWritable.Comparator比较器，默认返回正数，是升序，实现倒序返回负数
+	//第二个作业添加倒序排列比较器
+    jobPvSort.setSortComparatorClass(IntWritableDescComparator.class);
+4）全局排序要在一个reduce task中进行，第二个作业要设置reduce task数为1
+	jobPvSort.setNumReduceTasks(1);
+
+1.数据文件：
+	node01的/home/hadoop/jobs/mr_pvdata目录下
+		ad_data_20171224.txt
+		ad_data_20171225.txt
+		ad_data_20171226.txt
+		ad_data_20171227.txt
+		ad_data_20171228.txt
+	在hdfs创建addata
+	hadoop fs -mkdir -p /addata/pv_click_datas
+	上传数据文件
+	hadoop fs -put ad_data_2017122* /addata/pv_click_datas
+2.数据格式
+	地域编码（area_id），字符串类型
+	用户编号（user_id），字符串类型
+	浏览类型（view_type），整数类型，1表示曝光 2表示点击
+	日期（date）：字符串类型，格式如：20171228
+	分隔符：Tab键
+3.主类：
+	bigdata.mr.MrPvSortByDayApp
+4.提交命令：
+	hadoop jar MapReducePro-1.0-SNAPSHOT.jar bigdata.mr.MrPvSortByDayApp /addata/pv_click_datas /addata/pv_click_datas/out
+	
+############需求2演示##########
+需求：
+统计前一天，各个地域的曝光量pv，点击量click，点击率click_ratio
+主要考察知识点：
+1）自定义writable接口
+	bigdata.mr.bean.AdMetricBean
+1.数据文件
+	ad_data_20171228.txt
+2.在hdfs创建addata
+	hadoop fs -mkdir -p /addata/dt=20171228
+	上传数据到28号数据到hdfs
+	hadoop fs ad_data_20171228.txt /addata/dt=20171228
+3.主类：
+	bigdata.mr.MrPvClickByAreaDayApp
+4.提交命令：
+	hadoop jar MapReducePro-1.0-SNAPSHOT.jar bigdata.mr.MrPvClickByAreaDayApp /addata/dt=20171228 /addata/dt=20171228/out
+	
+############需求3演示##########
+需求：
+
+1.数据文件：
+	user_core.txt
+2.数据格式
+	姓名（name），字符串类型
+	年龄（age），整数类型
+	性别（gender），字符串类型
+	打分（core），整数类型，0到100的整数值
+	分隔符：Tab键
+3.主类：
+	bigdata.mr.MrUserAgeMaxCoreApp
+	自定义partitioner：bigdata.mr.AgePartitioner
+4.提交命令：
+	hadoop jar MapReducePro-1.0-SNAPSHOT.jar bigdata.mr.MrUserAgeMaxCoreApp /pvdata/user_score /pvdata/user_score/out
+
+
+
+

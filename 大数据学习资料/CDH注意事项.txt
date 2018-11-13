@@ -1,0 +1,22 @@
+jar包路径 
+/opt/cloudera/parcels/CDH-5.14.0-1.cdh5.14.0.p0.24/lib
+
+配置文件路径  /etc/hadoop/
+			  /etc/hbase/
+			  ....
+
+kafka的bin目录
+	/usr/bin/
+	/opt/cloudera/parcels/KAFKA/bin
+	
+	Kafka Broker 日志目录
+	/var/log/kafka
+	
+	部署目录
+	/etc/kafka
+	
+	
+其他bin目录(包括flume-ng/hadoop/hbase/hive/hdfs/zookeeper等)
+	/opt/cloudera/parcels/CDH-5.14.0-1.cdh5.14.0.p0.24/bin/
+	
+	

@@ -1,0 +1,458 @@
+***************hive搭建完演示*********
+1.查看数据库
+show databases;
+默认只有default库
+
+2.创建用户表：user_info
+字段信息：用户id，地域id，年龄，职业
+create table user_info(
+user_id string,
+area_id string,
+age int,
+occupation string
+)
+row format delimited fields terminated by '\t' 
+lines terminated by '\n'
+stored as textfile;	
+
+2.1 查看default库中的表，发现新建的user_info表在default库中
+use default;
+show tables;
+
+3.删除user_info表，user_info表在hdfs的目录也会被同时删除
+drop table user_info;
+
+4.创建数据库rel，用于存储维度表
+create database rel;
+查看hdfs路径
+hadoop fs -ls /user/hive/warehouse/
+会增加rel.db目录
+
+***************创建内部管理表*********
+1.在数据库rel中创建学生信息表
+字段信息：学号、姓名、年龄、地域
+切换使用rel数据库：
+use rel;
+create table student_info(
+student_id string comment '学号',
+name string comment '姓名',
+age int comment '年龄',
+origin string comment '地域'
+)
+comment '学生信息表'
+row format delimited 
+fields terminated by '\t' 
+lines terminated by '\n'
+stored as textfile;	
+
+1.1 使用load从本地加载数据到表student_info
+load data local inpath '/home/hadoop/apps/hive_test_data/student_info_data.txt' into table student_info;
+
+1.2 查看student_info表在hdfs路径，新增加了student_info_data.txt文件
+hadoop fs -ls /user/hive/warehouse/student_info
+
+1.3 查询北京（代码11）的学生信息
+select * from student_info where origin='11'
+
+1.4 使用load从hdfs加载数据到表student_info
+1.4.1 删除student_info表已经存在的hdfs文件
+hadoop fs -rm -f /user/hive/warehouse/rel.db/student_info/student_info_data.txt
+查询student_info没有数据了
+select * from student_info
+
+1.4.2 将本地文件上传到hdfs根目录下
+hadoop fs -put /home/hadoop/apps/hive_test_data/student_info_data.txt /
+
+1.4.3 使用load将hdfs文件加载到student_info表中
+load data inpath '/student_info_data.txt' into table student_info;
+
+load data inpath '/student_info_data.txt' overwrite into table student_info;
+
+1.4.4查询student_info，新加载的数据已经生效
+select * from student_info
+
+原hdfs根目录下的student_info_data.txt已经被剪切到student_info表的hdfs路径下/user/hive/warehouse/rel.db/student_info
+
+
+***************数据类型*********
+2.创建员工表：employee
+字段信息：用户id，工资，工作过的城市，社保缴费情况(养老,医保)，福利(吃饭补助(float),是否转正(boolean),商业保险(float))
+create table rel.employee(
+user_id string,
+salary int,
+worked_citys array<string>,
+social_security map<string,float>,
+welfare struct<meal_allowance:float,if_regular:boolean,commercial_insurance:float>
+)
+row format delimited fields terminated by '\t' 
+collection items terminated by ','
+map keys terminated by ':'
+lines terminated by '\n'
+stored as textfile;	
+
+2.1 从本地加载数据到表employee
+
+load data local inpath '/home/hadoop/apps/hive_test_data/employee_data.txt' into table employee;
+查询employee表
+select * from employee;
+
+2.2 修改employees_data.txt文件中的某些值，第二次向表中加载数据，会在原表数据后追加，不会覆盖
+load data local inpath '/home/hadoop/apps/hive_test_data/employee_data.txt' into table employee;
+
+查看HDFS路径
+hadoop fs -ls /user/hive/warehouse/rel.db/employee
+会出现employees_data_copy_1.txt文件
+查询employee表
+select * from employee;
+
+2.3 使用overwrite方式加载，覆盖原表数据
+load data local inpath '/home/hadoop/apps/hive_test_data/employees_data.txt' overwrite into table employee;
+
+查看HDFS路径
+hadoop fs -ls /user/hive/warehouse/rel.db/employee
+只有employee_data.txt文件
+查询employee表
+select * from employee;
+
+2.4 查询已转正的员工编号，工资，工作过的第一个城市，社保养老缴费情况，福利餐补金额
+select user_id,
+salary,
+worked_citys[0],
+social_security['养老'],
+welfare.meal_allowance 
+from rel.employee
+where welfare.if_regular=true;
+
+***************创建外部表*************
+可以提前创建好hdfs路径
+hadoop mkdir -p /user/hive/warehouse/data/student_school_info
+如果没有提前创建好，在创建外部表的时候会根据指定路径自动创建
+
+创建外部表学生入学信息
+字段信息：
+学号、姓名、学院id、专业id、入学年份
+HDFS数据路径：/user/hive/warehouse/data/student_school_info
+create external table rel.student_school_info(
+student_id string,
+name string,
+institute_id string,
+major_id string,
+school_year string
+)
+row format delimited 
+fields terminated by '\t' 
+lines terminated by '\n'
+stored as textfile
+location '/user/hive/warehouse/data/student_school_info';
+
+上传本地数据文件到hdfs
+hadoop fs -put /home/hadoop/apps/hive_test_data/student_school_info_external_data.txt /user/hive/warehouse/data/student_school_info/
+
+查询
+select * from student_school_info
+
+***************创建内部分区表*************
+1.创建学生入学信息表
+字段信息：学号、姓名、学院id、专业id
+分区字段：入学年份
+create table student_school_info_partition(
+student_id string,
+name string,
+institute_id string,
+major_id string
+)
+partitioned by(school_year string) 
+row format delimited
+fields terminated by '\t' 
+lines terminated by '\n'
+stored as textfile;	
+
+1.1 使用insert into从student_school_info表将2017年入学的学籍信息导入到student_school_info_partition分区表中
+
+insert into table student_school_info_partition partition(school_year='2017')
+select t1.student_id,t1.name,t1.institute_id,t1.major_id
+from student_school_info t1
+where t1.school_year=2017;
+
+1.2 查看分区
+show partitions student_school_info_partition;
+
+1.3 查看hdfs路径
+hadoop fs -ls /user/hive/warehouse/rel.db/student_school_info_partition/
+会增加school_year='2017'目录
+
+1.4 查询student_school_info_partition
+select * from student_school_info_partition where school_year='2017';
+
+1.5 删除分区
+alter table student_school_info_partition drop partition (school_year='2017');
+
+查看hadoop fs -ls /user/hive/warehouse/rel.db/student_school_info_partition/路径，
+school_year='2017'目录已经被删除
+
+1.6 使用动态分区添加数据
+set hive.exec.dynamic.partition=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+insert overwrite table student_school_info_partition partition(school_year)
+select t1.student_id,t1.name,t1.institute_id,t1.major_id,t1.school_year
+from student_school_info t1
+
+1.7 查看分区
+show partitions student_school_info_partition;
+
+1.8 查看hdfs路径
+hadoop fs -ls /user/hive/warehouse/rel.db/student_school_info_partition/
+会增加school_year='2017'目录
+
+1.9 查询
+select * from student_school_info_partition where school_year='2017';
+
+
+***************创建外部分区表*************
+1.创建学生入学信息表
+字段信息：学号、姓名、学院id、专业id
+分区字段：入学年份
+create external table rel.student_school_info_external_partition(
+student_id string,
+name string,
+institute_id string,
+major_id string
+)
+partitioned by(school_year string) 
+row format delimited 
+fields terminated by '\t' 
+lines terminated by '\n'
+stored as textfile
+location '/user/hive/warehouse/data/student_school_info_external_partition';
+
+1.2 在分区表的hdfs路径中添加school_year=2017目录
+hadoop fs -mkdir /user/hive/warehouse/data/student_school_info_external_partition/school_year=2017
+
+1.3 将student_school_external_partition_data.txt文件上传到school_year=2017文件夹下
+hadoop fs -put student_school_external_partition_data.txt /user/hive/warehouse/data/student_school_info_external_partition/school_year=2017
+
+1.4 查询student_school_info_external_partition表，虽然数据已经添加到了分区对应的hdfs路径，
+但是表还没有添加分区，所以查询的时候没有数据
+
+select * from student_school_info_external_partition;
+
+查询分区，也没有分区信息
+show partitions student_school_info_external_partition;
+
+1.5 手动添加分区
+
+alter table student_school_info_external_partition add partition(school_year='2017');
+
+再次查询分区和数据已经添加上了
+
+1.6 删除分区
+alter table student_school_info_external_partition drop partition(school_year='2017');
+
+查看分区，分区已经被删除
+show partitions student_school_info_external_partition;
+
+查看hdfs分区数据，分区数据还在
+hadoop fs -ls /user/hive/warehouse/data/student_school_info_external_partition/school_year=2017
+
+***************使用LIKE、AS创建表,表重命名，添加、修改、删除列*************
+1. 根据已存在的表结构，使用like关键字，复制一个表结构一模一样的新表
+create table student_info2 like student_info;
+
+2. 根据已经存在的表，使用as关键字，创建一个与查询结果字段一致的表，同时将查询结果数据插入到新表
+create table student_info3 as select * from student_info;
+只有student_id,name两个字段的表
+create table student_info4 as select student_id,name from student_info;
+
+3.student_info4表重命名为student_id_name
+alter table student_info4 rename to student_id_name;
+
+4.给student_info3表添加性别列,新添加的字段会在所有列最后，分区列之前，在添加新列之前已经存在的数据文件中
+如果没有新添加列对应的数据，在查询的时候显示为空。添加多个列用逗号隔开。
+alter table student_info_new3 add columns (gender string comment '性别');
+
+5.删除列或修改列
+5.1 修改列，将继续存在的列再定义一遍，需要替换的列重新定义
+alter table student_info_new3 replace columns(student_id string,name string,age int,origin string,gender2 int);
+
+5.2 删除列,将继续存在的列再定义一遍，需要删除的列不再定义
+alter table student_info_new3 replace columns(student_id string,name string,age int,origin string);
+
+***************创建分桶表*************
+1. 按照指定字段取它的hash散列值分桶
+创建学生入学信息分桶表
+字段信息：学号、姓名、学院ID、专业ID
+分桶字段：学号，4个桶，桶内按照学号升序排列
+
+create table rel.student_info_bucket(
+student_id string,
+name string,
+age int,
+origin string
+)
+clustered by (student_id) sorted by (student_id asc) into 4 buckets 
+row format delimited 
+fields terminated by '\t' 
+lines terminated by '\n' 
+stored as textfile;
+
+2. 向student_info_bucket分桶表插入数据
+
+set hive.enforce.bucketing = true;
+set mapreduce.job.reduces=4;
+insert overwrite table student_info_bucket 
+select student_id,name,age,origin 
+from student_info 
+cluster by(student_id);
+
+查看hdfs分桶文件
+hadoop fs -ls /user/hive/warehouse/rel.db/student_info_bucket
+
+
+分桶表一般不使用load向分桶表中导入数据，因为load导入数据只是将数据复制到表的数据存储目录下，hive并不会
+在load的时候对数据进行分析然后按照分桶字段分桶，load只会将一个文件全部导入到分桶表中，并没有分桶。一般
+采用insert从其他表向分桶表插入数据。
+分桶表在创建表的时候只是定义表的模型，插入的时候需要做如下操作：
+在每次执行分桶插入的时候在当前执行的session会话中要设置hive.enforce.bucketing = true;声明本次执行的是一次分桶操作。
+需要指定reduce个数与分桶的数量相同set mapreduce.job.reduces=4，这样才能保证有多少桶就生成多少个文件。
+如果定义了按照分桶字段排序，需要在从其他表查询数据过程中将数据按照分区字段排序之后插入各个桶中，分桶表并不会将各分桶中的数据排序。
+排序和分桶的字段相同的时候使用Cluster by(字段),cluster by 默认按照分桶字段在桶内升序排列，如果需要在桶内降序排列，
+使用distribute by (col) sort by (col desc)组合实现。
+作业练习：
+set hive.enforce.bucketing = true;
+set mapreduce.job.reduces=4;
+insert overwrite table student_info_bucket 
+select student_id,name,age,origin 
+from student_info 
+distribute by (student_id) sort by (student_id desc); 
+
+
+********************导出数据**************
+使用insert将student_info表数据导出到本地指定路径
+
+insert overwrite local directory '/home/hadoop/apps/hive_test_data/export_data' 
+row format delimited  fields terminated by '\t' select * from student_info;
+
+导出数据到本地的常用方法
+hive -e"select * from rel.student_info"> ./student_info_data.txt
+
+默认结果分隔符：'\t'
+
+
+***************各种join关联**************
+create table rel.a(
+id int,
+name string
+)
+row format delimited 
+fields terminated by '\t' 
+lines terminated by '\n' 
+stored as textfile;
+
+create table rel.b(
+id int,
+name string
+)
+row format delimited 
+fields terminated by '\t' 
+lines terminated by '\n' 
+stored as textfile;
+
+
+load data local inpath '/home/hadoop/apps/hive_test_data/a_join_data' into table a;
+load data local inpath '/home/hadoop/apps/hive_test_data/b_join_data' into table b;
+
+
+****join或inner join
+两个表通过id关联，只把id值相等的数据查询出来。join的查询结果与inner join的查询结果相同。
+
+select * from a join b on a.id=b.id;
+等同于
+select * from a inner join b on a.id=b.id;
+
+****full outer join或full join
+两个表通过id关联，把两个表的数据全部查询出来
+select * from a full join b on a.id=b.id;
+
+****left join
+左连接时，左表中出现的join字段都保留，右表没有连接上的都为空
+select * from a left join b on a.id=b.id;
+
+****right join
+右连接时，右表中出现的join字段都保留，左表没有连接上的都是空
+select * from a right join b on a.id=b.id;
+
+****left semi join
+左半连接实现了类似IN/EXISTS的查询语义，输出符合条件的左表内容。
+hive不支持in …exists这种关系型数据库中的子查询结构，hive暂时不支持右半连接。
+例如：
+select a.id, a.name from a where a.id in (select b.id from b);
+使用Hive对应于如下语句：
+select a.id,a.name from a left semi join b on a.id = b.id;
+
+****map side join
+使用分布式缓存将小表数据加载都各个map任务中，在map端完成join，map任务输出后，不需要将数据拷贝到reducer阶段再进行join，
+降低的数据在网络节点之间传输的开销。多表关联数据倾斜优化的一种手段。多表连接，如果只有一个表比较大，其他表都很小，
+则join操作会转换成一个只包含map的Job。运行日志中会出现Number of reduce tasks is set to 0 since there's no reduce operator
+没有reduce的提示。
+例如：
+select /*+ mapjoin(b) */ a.id, a.name from a join b on a.id = b.id
+
+
+***************hive内置函数**************
+
+创建用户评分表
+create table rel.user_core_info(
+user_id string,
+age int,
+gender string,
+core int
+)
+row format delimited fields terminated by '\t' 
+lines terminated by '\n'
+stored as textfile;
+
+load data local inpath '/home/hadoop/apps/hive_test_data/user_core.txt' into table rel.user_core_info;
+
+1. 条件函数 case when 
+语法1：CASE a WHEN b THEN c [WHEN d THEN e]* [ELSE f] END
+说明：如果a等于b，那么返回c；如果a等于d，那么返回e；否则返回f
+例如：
+hive> select case 1 when 2 then 'two' when 1 then 'one' else 'zero' end;
+one
+语法2：CASE WHEN a THEN b [WHEN c THEN d]* [ELSE e] END
+说明：如果a为TRUE，则返回b；如果c为TRUE，则返回d；否则返回e
+例如：
+hive> select case when 1=2 then 'two' when 1=1 then 'one' else 'zero' end;
+one
+
+查询用户评分表，每个年龄段的最大评分值
+select gender,
+case when age<=20 then 'p0' when age>20 and age<=50 then 'p1' when age>=50 then 'p3' else 'p0' end,
+max(core) max_core
+from rel.user_core_info 
+group by gender,
+case when age<=20 then 'p0' when age>20 and age<=50 then 'p1' when age>=50 then 'p3' else 'p0' end;
+
+
+2. 自定义UDF函数
+当Hive提供的内置函数无法满足你的业务处理需要时，此时就可以考虑使用用户自定义函数（UDF：user-defined function）。
+UDF 作用于单个数据行，产生一个数据行作为输出。
+步骤：
+1. 先开发一个java类，继承UDF，并重载evaluate方法
+2. 打成jar包上传到服务器
+3. 在使用的时候将jar包添加到hive的classpath
+hive>add jar /home/hadoop/apps/hive_test_data/HiveUdfPro-1.0-SNAPSHOT.jar;
+4. 创建临时函数与开发好的java class关联
+hive>create temporary function age_partition as 'cn.chinahadoop.udf.AgePartitionFunction';
+5. 即可在hql中使用自定义的函数
+select gender,
+age_partition(age),
+max(core) max_core
+from rel.user_core_info 
+group by gender,
+age_partition(age);
+
+
+
+
+

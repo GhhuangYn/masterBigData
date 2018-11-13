@@ -1,0 +1,4 @@
+xiaoming	10000	18	student
+xiaobai	10000	25	coder
+zhangsan	11000	28	coder
+lisi	10000	30	teacher

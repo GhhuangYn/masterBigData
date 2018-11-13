@@ -1,0 +1,122 @@
+**************环境搭建简单的例子
+bin/flume-ng agent --conf conf --conf-file conf/example.conf --name a1 -Dflume.root.logger=INFO,console
+
+使用telnet发送数据
+telnet localhost 44444
+
+
+**************exec和avro source演示
+启动一个avrosource的agent
+bin/flume-ng agent --conf conf --conf-file conf/avrosource.conf --name avroagent -Dflume.root.logger=INFO,console
+
+启动一个execsource的agent，向avroagent以rpc的方式发送收集的数据
+bin/flume-ng agent --conf conf --conf-file conf/execsource.conf --name execagent
+
+监听/home/hadoop/apps/flume/execsource/exectest.log文件
+
+**************spooldir source演示
+bin/flume-ng agent --conf conf --conf-file conf/spooldirsource.conf --name a1 -Dflume.root.logger=INFO,console
+
+监听/home/hadoop/apps/flume/spoolDir目录
+创建一些文件，查看状态
+
+在创建一个子文件夹，文件夹里添加新文件，验证spooldir不能够对嵌套文件夹递归监听
+
+**************kafka source演示
+在kafka中创建主题
+bin/kafka-topics.sh --create --zookeeper 192.168.183.100:2181 --replication-factor 1 --partitions 3 --topic flumetopictest1
+查看主题
+bin/kafka-topics.sh --list --zookeeper 192.168.183.100:2181
+
+bin/kafka-console-producer.sh --broker-list 192.168.183.102:9092,192.168.183.103:9092 --topic flumetopictest1 
+
+bin/flume-ng agent --conf conf --conf-file conf/kafkasource.conf --name kafkasourceagent -Dflume.root.logger=INFO,console
+
+**************taildir source演示
+
+bin/flume-ng agent --conf conf --conf-file conf/taildirsource.conf --name taildiragent -Dflume.root.logger=INFO,console
+
+
+**************file channel演示
+在/home/hadoop/apps/flume/filechannel目录手动创建backup、checkpoint、data文件夹
+
+bin/flume-ng agent --conf conf --conf-file conf/filechannle.conf --name a1 -Dflume.root.logger=INFO,console
+
+使用telnet发送数据
+telnet localhost 44444
+
+
+**************kafka channel演示
+
+bin/kafka-topics.sh --create --zookeeper 192.168.183.100:2181 --replication-factor 1 --partitions 3 --topic flumechannel2
+查看主题
+bin/kafka-topics.sh --list --zookeeper 192.168.183.100:2181
+
+bin/flume-ng agent --conf conf --conf-file conf/kafkachannel.conf --name a1 -Dflume.root.logger=INFO,console
+
+使用telnet发送数据
+telnet localhost 44444
+
+**************hdfs sink演示
+
+bin/flume-ng agent --conf conf --conf-file conf/hdfssink.conf --name a1 -Dflume.root.logger=INFO,console
+
+使用telnet发送数据
+telnet localhost 44444
+
+**************kafka sink演示
+创建主题FlumeKafkaSinkTopic1
+bin/kafka-topics.sh --create --zookeeper 192.168.183.100:2181 --replication-factor 1 --partitions 3 --topic FlumeKafkaSinkTopic1
+查看主题
+bin/kafka-topics.sh --list --zookeeper 192.168.183.100:2181
+
+bin/flume-ng agent --conf conf --conf-file conf/kafkasink.conf --name a1 >/dev/null 2>&1 &
+
+
+**************replicating selector演示
+
+一个source将一个event拷贝到多个channel，通过不同的sink消费不同的channel，将相同的event输出到不同的地方
+配置文件：replicating_selector.conf
+分别写入到kafka和文件中
+
+创建主题FlumeKafkaSinkTopic1
+bin/kafka-topics.sh --create --zookeeper 192.168.183.100:2181 --replication-factor 1 --partitions 3 --topic FlumeSelectorTopic1
+
+启动flume agent
+bin/flume-ng agent --conf conf --conf-file conf/replicating_selector.conf --name a1
+
+使用telnet发送数据
+telnet localhost 44444
+
+查看/home/hadoop/apps/flume/selector路径下的数据
+
+查看kafka FlumeSelectorTopic1主题数据
+bin/kafka-console-consumer.sh --zookeeper 192.168.183.100:2181 --from-beginning --topic FlumeSelectorTopic1
+
+**************multiplexing selector演示
+
+配置文件multiplexing_selector.conf、avro_sink1.conf、avro_sink2.conf、avro_sink3.conf
+向不同的avro_sink对应的配置文件的agent发送数据，不同的avro_sink配置文件通过static interceptor在event头信息中写入不同的静态数据
+multiplexing_selector根据event头信息中不同的静态数据类型分别发送到不同的目的地
+
+在/home/hadoop/apps/flume/multiplexing目录下分别创建看k1 k2 k3目录
+
+bin/flume-ng agent --conf conf --conf-file conf/multiplexing_selector.conf --name a3 -Dflume.root.logger=INFO,console
+
+bin/flume-ng agent --conf conf --conf-file conf/avro_sink1.conf --name agent1 >/dev/null 2>&1 &
+bin/flume-ng agent --conf conf --conf-file conf/avro_sink2.conf --name agent2 >/dev/null 2>&1 &
+bin/flume-ng agent --conf conf --conf-file conf/avro_sink3.conf --name agent3 >/dev/null 2>&1 &
+
+使用telnet发送数据
+telnet localhost 44444
+
+
+
+
+
+
+ 
+
+
+
+

@@ -1,0 +1,12 @@
+./bin/kafka-topics.sh --create --zookeeper 192.168.0.8:2181,192.168.0.102:2181,192.168.0.103:2181 --replication-factor 2 --partitions 3 --topic topictest1
+
+./bin/kafka-topics.sh --list --zookeeper 192.168.0.8:2181,192.168.0.102:2181,192.168.0.103:2181 --topic topictest1
+
+./bin/kafka-topics.sh --describe --zookeeper 192.168.0.8:2181,192.168.0.102:2181,192.168.0.103:2181 --topic topictest1
+
+
+./bin/kafka-topics.sh --alter --zookeeper 192.168.0.8:2181,192.168.0.102:2181,192.168.0.103:2181 --topic topictest1 --partitions 5
+
+./bin/kafka-console-producer.sh --broker-list  192.168.0.8:9092,192.168.0.102:9092  --topic topictest1 
+
+./bin/kafka-console-consumer.sh --zookeeper 192.168.0.8:2181 --from-beginning --topic topictest1 

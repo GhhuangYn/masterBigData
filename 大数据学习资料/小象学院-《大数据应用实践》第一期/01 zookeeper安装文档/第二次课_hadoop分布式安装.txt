@@ -1,0 +1,166 @@
+1、使用hadoop用户解压并安装到apps路径下
+1.1使用hadoop用户进入到在/home/hadoop/apps目录下
+cd /home/hadoop/apps
+
+注意：如果没有/home/hadoop/apps路径，自行在/home/hadoop路径下创建apps文件夹：mkdir /home/Hadoop/apps
+1.2使用rz将本机的hadoop安装包上传到/home/hadoop/apps目录下
+1.3解压安装文件
+tar -zxvf hadoop-2.7.4.tar.gz
+1.4使用root用户创建软链接
+ln -s /home/hadoop/apps/hadoop-2.7.4 /usr/local/hadoop
+1.5使用root用户修改软链接属主
+chown -R hadoop:hadoop /usr/local/hadoop
+
+
+1.6使用root用户将hadoop相关内容添加到环境变量中
+注意：Hadoop配置文件路径是/usr/local/hadoop/etc/hadoop 
+vim /etc/profile
+添加内容如下：
+export HADOOP_HOME=/usr/local/hadoop
+export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
+export YARN_HOME=$HADOOP_HOME
+export YARN_CONF_DIR=$HADOOP_HOME/etc/hadoop
+export PATH=$PATH:${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin
+1.7使用root用户重新编译环境变量使配置生效
+source /etc/profile
+
+2. 配置HDFS
+2.1使用hadoop用户进入到Hadoop配置文件路径
+     cd /usr/local/hadoop/etc/hadoop
+2.2修改hadoo-env.sh
+修改JDK路径export JAVA_HOME=/usr/local/jdk
+2.3 配置core-site.xml
+2.4 配置hdfs-site.xml
+
+3. 配置YARN
+3.1 修改yarn-site.xml
+3.2 修改mapred-site.xml
+3.3 在/usr/local/hadoop路径下创建hdpdata文件夹
+cd /usr/local/hadoop
+mkdir hdpdata
+
+4. 修改slaves文件，设置datanode和nodemanager启动节点主机名称
+在slaves文件中添加节点的主机名称
+node03
+node04
+node05
+
+注意：node03，node04，node05是我的虚拟机主机名称，在这三台机器上启动datanode和nodemanager，同学根据自己集群主机名称情况自行修改。
+
+5. 配置hadoop用户免密码登陆
+配置node01到node01、node02、node03、node04、node05的免密码登陆
+在node01上生产一对钥匙
+ssh-keygen -t rsa
+将公钥拷贝到其他节点，包括自己本机
+ssh-copy-id -i node01
+ssh-copy-id -i node02
+ssh-copy-id -i node03
+ssh-copy-id -i node04
+ssh-copy-id -i node05
+
+配置node02到node01、node02、node03、node04、node05的免密码登陆
+在node02上生产一对钥匙
+ssh-keygen -t rsa
+将公钥拷贝到其他节点，包括自己本机
+ssh-copy-id -i node01
+ssh-copy-id -i node02
+ssh-copy-id -i node03
+ssh-copy-id -i node04
+ssh-copy-id -i node05
+注意：两个namenode之间要配置ssh免密码登陆
+
+6. 将配置好的hadoop拷贝到其他节点
+scp -r hadoop-2.7.4 hadoop@node02:/home/hadoop/apps
+scp -r hadoop-2.7.4 hadoop@node03:/home/hadoop/apps
+scp -r hadoop-2.7.4 hadoop@node04:/home/hadoop/apps
+scp -r hadoop-2.7.4 hadoop@node05:/home/hadoop/apps
+
+在每个节点分别执行如下四步操作
+第一步：使用root用户创建软链接
+ln -s /home/hadoop/apps/hadoop-2.7.4 /usr/local/hadoop
+第二步：使用root用户修改软链接属主
+chown -R hadoop:hadoop /usr/local/hadoop
+第三步：使用root用户添加环境变量
+vim /etc/profile
+添加内容：
+export HADOOP_HOME=/usr/local/hadoop
+export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
+export YARN_HOME=$HADOOP_HOME
+export YARN_CONF_DIR=$HADOOP_HOME/etc/hadoop
+
+export PATH=$PATH:${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin
+第四步：使用root用户重新编译环境变量使配置生效
+source /etc/profile
+
+
+集群启动步骤
+（注意使用hadoop用户启动，严格按照顺序启动）
+su hadoop
+1. 启动journalnode（分别在node03、node04、node05上执行启动）
+/usr/local/hadoop/sbin/hadoop-daemon.sh start journalnode
+运行jps命令检验，node03、node04、node05上多了JournalNode进程
+2. 格式化HDFS
+在node01上执行命令:
+hdfs namenode -format
+格式化成功之后会在core-site.xml中的hadoop.tmp.dir指定的路径下生成dfs文件夹，将该文件夹拷贝到node02的相同路径下
+scp -r hdpdata hadoop@node02:/usr/local/hadoop
+
+3. 在node01上执行格式化ZKFC操作
+hdfs zkfc -formatZK
+执行成功，日志输出如下信息
+INFO ha.ActiveStandbyElector: Successfully created /hadoop-ha/ns in ZK
+4. 在node01上启动HDFS
+sbin/start-dfs.sh
+5. 在node02上启动YARN
+sbin/start-yarn.sh
+在node01单独启动一个ResourceManger作为备份节点
+sbin/yarn-daemon.sh start resourcemanager
+6. 在node02上启动JobHistoryServer
+sbin/mr-jobhistory-daemon.sh start historyserver
+启动完成node02会增加一个JobHistoryServer进程
+7. hadoop安装启动完成
+HDFS HTTP访问地址
+NameNode (active)：http://192.168.183.100:50070
+NameNode (standby)：http://192.168.183.101:50070
+ResourceManager HTTP访问地址
+ResourceManager ：http://192.168.183.101:8088
+历史日志HTTP访问地址
+JobHistoryServer：http://192.168.183.101:19888
+
+集群验证
+1. 验证HDFS 是否正常工作及HA高可用
+首先向hdfs上传一个文件
+
+hadoop fs -put /usr/local/hadoop/README.txt /
+在active节点手动关闭active的namenode
+sbin/hadoop-daemon.sh stop namenode
+通过HTTP 50070端口查看standby namenode的状态是否转换为active
+手动启动上一步关闭的namenode
+sbin/hadoop-daemon.sh start namenode
+
+2.验证YARN是否正常工作及ResourceManager HA高可用
+运行测试hadoop提供的demo中的WordCount程序：
+hadoop fs -mkdir /wordcount
+hadoop fs -mkdir /wordcount/input 
+hadoop fs -mv /README.txt /wordcount/input 
+hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.4.jar wordcount /wordcount/input  /wordcount/output
+
+验证ResourceManager HA
+手动关闭node02的ResourceManager
+sbin/yarn-daemon.sh stop resourcemanager
+通过HTTP 8088端口访问node01的ResourceManager查看状态
+手动启动node02 的ResourceManager
+sbin/yarn-daemon.sh start resourcemanager
+
+
+
+
+
+
+
+
+
+
+
+
+
